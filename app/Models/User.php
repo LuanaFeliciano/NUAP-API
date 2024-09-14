@@ -24,7 +24,8 @@ class User extends Authenticatable
         'telefone',
         'celular',
         'tipo',
-        'RA'
+        'RA',
+        'ativo'
     ];
 
     /**
