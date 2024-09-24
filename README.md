@@ -8,6 +8,8 @@ A API vai ser usada no sistema web da NuAP para facilitar o processo de agendame
 
 * Registro
 * Login
+* Agendamento
+* Atendimento
 
 
 # Tecnologia Utilizada:
