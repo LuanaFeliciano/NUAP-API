@@ -19,6 +19,7 @@ class Agendamento extends Model
         'Condicao', 
         'PrimeiroAtendimento', 
         'Data', 
+        'Finalizado', 
         'Periodo', 
         'Cancelado',
         'Sala',

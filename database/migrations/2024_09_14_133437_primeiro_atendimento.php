@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('primeiro_atendimento', function (Blueprint $table) {
             $table->id('IdPrimeiroAtendimento');
-            $table->text('ConstelacaoFamiliar')->nullable();
-            $table->text('ResideComQuem')->nullable();
-            $table->text('RelatoAtendimento')->nullable();
-            $table->string('EstagioMudanca')->nullable();
-            $table->text('Combinados')->nullable();
-            $table->text('Observacao')->nullable();
-            $table->text('OrientacaoSupervisao')->nullable();
-            $table->date('DataPrimeiroAtendimento'); 
+            $table->text('ConstelacaoFamiliar');
+            $table->text('ResideComQuem');
+            $table->text('RelatoAtendimento');
+            $table->string('EstagioMudanca');
+            $table->text('Combinados');
+            $table->text('Observacao');
+            $table->text('OrientacaoSupervisao');
+            $table->dateTime('DataPrimeiroAtendimento'); 
             $table->foreignId('AgendamentoFK')->constrained('agendamento', 'IdAgendamento')->onDelete('cascade'); // FK para a tabela agendamento
             $table->timestamps();
         });

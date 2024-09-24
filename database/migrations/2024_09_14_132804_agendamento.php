@@ -17,9 +17,10 @@ return new class extends Migration
             $table->foreignId('IdAluno')->constrained('aluno_registro', 'IdAluno'); //chave estrangeira para a tabela aluno_registro
             $table->enum('Condicao', ['ok', 'f', 'd'])->nullable(); // f (falta), d (desistencia)
             $table->boolean('PrimeiroAtendimento')->default(false);
-            $table->date('Data'); //data do agendamento
+            $table->dateTime('Data'); //data do agendamento
             $table->enum('Periodo', ['manha', 'tarde', 'noite']);
             $table->boolean('Cancelado')->default(false);
+            $table->boolean('Finalizado')->default(false);//para quando finalizar
             $table->string('Sala')->nullable(); //sala do agendamento
             $table->string('OBS')->nullable(); //observacao
             $table->timestamps();
