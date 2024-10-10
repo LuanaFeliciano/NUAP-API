@@ -57,12 +57,14 @@ class Agendamento extends Controller
             $aluno = AlunoRegistro::where('RA', $request->RaAluno)->firstOrFail();
             $user = User::where('RA', $request->RaEstagiario)->firstOrFail();
 
+            $temAgendamento = ModelsAgendamento::where('IdAluno', $aluno->IdAluno)->exists();
+            $primeiroAtendimento = $temAgendamento ? ($request->PrimeiroAtendimento ?? false) : true;
             //cadastra o agendamento
             $agendamento = ModelsAgendamento::create([
                 'user_id' => $user->id,
                 'IdAluno' => $aluno->IdAluno,
                 'Condicao' => $request->Condicao,
-                'PrimeiroAtendimento' => $request->PrimeiroAtendimento ?? false,
+                'PrimeiroAtendimento' => $primeiroAtendimento,
                 'Data' => $request->Data,
                 'Periodo' => $request->Periodo,
                 'Sala' => $request->Sala,
@@ -94,17 +96,35 @@ class Agendamento extends Controller
                 'Data.date' => 'O campo Data deve ser uma data válida.',
             ]);
 
+            $data = today();
+            if (strlen(trim($request->Data)) > 0) {
+                $data = $request->Data;
+            }
+
         }else{
             //coordenadora e atendente
             $validator = Validator::make($request->all(), [
-                'RaEstagiario' => 'required|string|exists:users,RA',
+                'RaEstagiario' => 'nullable|string|exists:users,RA',
                 'Data' => 'nullable|date'
             ], [
                 'RaEstagiario.required' => 'O campo RA do estagiário é obrigatório.',
                 'RaEstagiario.exists' => 'O RA do estagiário informado não existe.',
                 'Data.date' => 'O campo Data deve ser uma data válida.',
             ]);
-            $raEstagiario = $request->RaEstagiario;
+
+            if (strlen(trim($request->RaEstagiario)) == 0 && strlen(trim($request->Data)) == 0) {
+                //se não tiver ra nem data pesquisa pelos agendaments de hoje
+                $data = today();
+            } else {
+                //se tiver ra usa o ra
+                if (strlen(trim($request->RaEstagiario)) > 0) {
+                    $raEstagiario = $request->RaEstagiario;
+                }
+                //se tiver data usa a data infromada
+                if (strlen(trim($request->Data)) > 0) {
+                    $data = $request->Data;
+                }
+            } 
         }
         
         if ($validator->fails()) {
@@ -112,18 +132,49 @@ class Agendamento extends Controller
         }
     
         try {
-            $estagiario = User::where('RA', $raEstagiario)->firstOrFail();
             
-            //constula os agendamentos do estagiario
-            $query = ModelsAgendamento::with(['estagiario', 'aluno'])
-            ->where('user_id', $estagiario->id);
-    
-            //se ter data filtra pela data
-            if ($request->has('Data')) {
-                $query->whereDate('Data', $request->Data);
+            // Consulta o estagiário se o RA for informado
+            if (isset($raEstagiario)) {
+                $estagiario = User::where('RA', $raEstagiario)->first();
+                if (!$estagiario) {
+                    return $this->sendError('Estagiário não encontrado', ['RaAluno' => 'O RA do estagiário informado não foi encontrado.'], 404);
+                }
             }
-    
-            $agendamentos = $query->get();
+
+            
+            $query = ModelsAgendamento::with(['estagiario', 'aluno']);
+
+            //se houver estagiário, filtra por user_id
+            if (isset($estagiario)) {
+                $query->where('user_id', $estagiario->id);
+            }
+
+            
+           //se o ra do aluno for no request busca o aluno pelo RA
+            if ($request->has('RaAluno')) {
+                $aluno = AlunoRegistro::where('RA', $request->RaAluno)->first();
+                
+                if (!$aluno) {
+                    return $this->sendError('Aluno não encontrado', ['RaAluno' => 'O RA do aluno informado não foi encontrado.'], 404);
+                }
+
+                $query->where('IdAluno', $aluno->IdAluno);
+            }
+
+            // Se houver registro (IdAluno), filtra por IdAluno
+            if ($request->has('registro')) {
+                $query->where('IdAluno', $request->registro);
+            }
+
+            // Se houver data, filtra pela data
+            if (isset($data)) {
+                $query->whereDate('Data', $data);
+            }
+
+            // Obtém os agendamentos
+            $agendamentos = $query->orderBy('IdAgendamento')->get();
+
+
 
 
             $totalAgendamentos = $agendamentos->count();
@@ -137,15 +188,34 @@ class Agendamento extends Controller
             return response()->json([
                 'success' => true,
                 'agendamentos' => $agendamentos->map(function ($agendamento) {
+                    
+                    $status = 'Não Atendido';
+                    if ($agendamento->Condicao === 'f') {
+                        $status = 'Faltou';
+                    } elseif ($agendamento->Condicao === 'ok') {
+                        $status = 'Atendido';
+                    }
+            
                     return [
+                        'Agendamento' => $agendamento->IdAgendamento,
+
+                        'estagiarioId' => $agendamento->user_id,
                         'estagiario' => $agendamento->estagiario->nome,
+                        'estagiarioRA' => $agendamento->estagiario->RA,
+
                         'sala' => $agendamento->Sala,
+
+                        
+                        'alunoId' => $agendamento->IdAluno,
                         'aluno' => $agendamento->aluno->Nome,
+                        'alunoRA' => $agendamento->aluno->RA,
                         'curso' => $agendamento->aluno->Curso,
                         'termo' => $agendamento->aluno->Termo,
+                        
                         'contato' => $agendamento->aluno->Celular,
                         'contatoTelefone' => $agendamento->aluno->Telefone,
                         'condicao' => $agendamento->Condicao,
+                        'status' => $status, // Novo campo status
                         'primeiro_atendimento' => $agendamento->PrimeiroAtendimento ? 'Sim' : 'Não',
                         'cancelado' => $agendamento->Cancelado ? 'Sim' : 'Não',
                         'Data' => $agendamento->Data,
@@ -167,6 +237,88 @@ class Agendamento extends Controller
             return $this->sendError('Erro ao consultar agendamentos.', $e->getMessage(), 500);
         }
     }
+
+
+
+
+    public function atualizarCondicao(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!in_array($user->tipo, ['coordenadora', 'atendente'])) {
+            return $this->sendError('Unauthorized', ['error' => 'Você não tem permissão para atualizar a condição do agendamento'], 403);
+        }
+
+        
+        $validator = Validator::make($request->all(), [
+            'Condicao' => 'required|in:ok,f,d', // ok: Atendido, f: Falta, d: Desistência
+        ], [
+            'Condicao.required' => 'O campo Condição é obrigatório.',
+            'Condicao.in' => 'O campo Condição deve ser um dos seguintes valores: ok, f, d.',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError('Falta de informação', $validator->errors(), 422);
+        }
+
+        try {
+            //Buscar o agendamento
+            $agendamento = ModelsAgendamento::find($id);
+
+            if (!$agendamento) {
+                return $this->sendError('Agendamento não encontrado', ['Agendamento' => 'Agendamento com esse número não encontrado'], 404);
+            }
+
+
+            //ataualizadndo a condicao
+            $agendamento->Condicao = $request->Condicao;
+            $agendamento->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Condição do agendamento atualizada com sucesso!',
+                'agendamento' => $agendamento
+            ], 200);
+
+        } catch (\Exception $e) {
+            return $this->sendError('Erro ao atualizar a condição do agendamento.', $e->getMessage(), 500);
+        }
+    }
+
+
+
+    public function finalizarAgendamentos(Request $request, $idAluno)
+    {
+        $user = Auth::user();
+        if (!in_array($user->tipo, ['coordenadora', 'estagiario'])) {
+            return $this->sendError('Unauthorized', ['error' => 'Você não tem permissão para finalizar os agendamentos'], 403);
+        }
+
+        try {
+
+            $agendamentos = ModelsAgendamento::where('IdAluno', $idAluno)->get();
+
+            
+            if ($agendamentos->isEmpty()) {
+                return $this->sendError('Nenhum agendamento encontrado', ['Agendamento' => 'Nenhum agendamento encontrado para esse aluno'], 404);
+            }
+
+            //atualiza cada agendamento para finalizado
+            foreach ($agendamentos as $agendamento) {
+                $agendamento->Finalizado = true;
+                $agendamento->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Todos os agendamentos foram finalizados com sucesso!'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return $this->sendError('Erro ao finalizar os agendamentos.', $e->getMessage(), 500);
+        }
+    }
+
     
 
     

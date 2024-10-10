@@ -19,7 +19,8 @@ class RetornoAtendimento extends Model
         'EstagioMudanca',
         'NovosCombinados',
         'OrientacaoSupervisao',
-        'AgendamentoFK'
+        'AgendamentoFK',
+        'Data'
     ];
 
     public function agendamento()

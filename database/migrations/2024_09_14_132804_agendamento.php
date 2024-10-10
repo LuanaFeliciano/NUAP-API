@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('agendamento', function (Blueprint $table) {
             $table->id('IdAgendamento'); // Chave primária
-            $table->foreignId('user_id')->constrained('users'); //id da tabela users conectado ao users
-            $table->foreignId('IdAluno')->constrained('aluno_registro', 'IdAluno'); //chave estrangeira para a tabela aluno_registro
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); //id da tabela users conectado ao users
+            $table->foreignId('IdAluno')->constrained('aluno_registro', 'IdAluno')->onDelete('cascade'); //chave estrangeira para a tabela aluno_registro
             $table->enum('Condicao', ['ok', 'f', 'd'])->nullable(); // f (falta), d (desistencia)
             $table->boolean('PrimeiroAtendimento')->default(false);
             $table->dateTime('Data'); //data do agendamento
@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('Sala')->nullable(); //sala do agendamento
             $table->string('OBS')->nullable(); //observacao
             $table->timestamps();
+            
         });
         
     }

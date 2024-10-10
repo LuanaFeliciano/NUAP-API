@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
 use App\Models\PrimeiroAtendimento;
+use App\Models\RetornoAtendimento;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,22 @@ use Illuminate\Support\Facades\Validator;
 class Atendimento extends Controller
 {
 
-    function primeiroAtendimento(Request $request){
+    function RealizarAtendimento(Request $request){
+        $agendamento = Agendamento::where('IdAgendamento', $request->Agendamento)->first();
+        
+        if (!$agendamento) {
+            return $this->sendError('Agendamento não encontrado', "Agendamento não encontrado", 404);
+        }
+
+        if ($agendamento->PrimeiroAtendimento && $agendamento->PrimeiroAtendimento == true) {
+            return $this->primeiroAtendimento($request);
+        }else{
+            return $this->retornoAtendimento($request);
+        }
+    }
+
+    function primeiroAtendimento($request){
+
         $validator = Validator::make($request->all(), [
             'ConstelacaoFamiliar' => 'required|string',
             'ResideComQuem' => 'required|string',
@@ -35,14 +51,14 @@ class Atendimento extends Controller
             'DataPrimeiroAtendimento.date' => 'O campo "Data do Primeiro Atendimento" deve ser uma data válida.',
             'Agendamento.required' => 'O "Número do Agendamento" é obrigatório.',
         ]);
-        
 
+        
         if ($validator->fails()) {
             return $this->sendError('Falta de informação', $validator->errors(), 422);
         }
 
         try {
-
+            
             $atendimento = PrimeiroAtendimento::create([
                 'ConstelacaoFamiliar' => $request->ConstelacaoFamiliar,
                 'ResideComQuem' => $request->ResideComQuem,
@@ -54,9 +70,9 @@ class Atendimento extends Controller
                 'DataPrimeiroAtendimento' => $request->DataPrimeiroAtendimento,
                 'AgendamentoFK' => $request->Agendamento,
             ]);
-
-            $this->atualizarAgendamentoParaOk($request->Agendamento);
-            $this->reagendamentoAutomatico($request->Agendamento, $atendimento->id);
+            
+            $this->atualizarAgendamentoParaOk($request->Agendamento); //quando realiza o atendimento quer dizer que o aluno estava entao a condicao é ok
+            $this->reagendamentoAutomatico($request->Agendamento);
 
             return $this->sendResponse($atendimento, 'Atendimento registrado com sucesso.');
             
@@ -65,8 +81,53 @@ class Atendimento extends Controller
         }
     }
 
+    function retornoAtendimento($request){
+        $validator = Validator::make($request->all(), [
+            'VerificacaoCombinados' => 'required|string',
+            'RelatoAtendimento' => 'required|string',
+            'EstagioMudanca' => 'required|string',
+            'NovosCombinados' => 'required|string',
+            'OrientacaoSupervisao' => 'required|string',
+            'Data' => 'required|date',
+            'Agendamento' => 'required|integer', 
+        ], [
+            'VerificacaoCombinados.required' => 'O campo "Verificação Combinados" é obrigatório.',
+            'RelatoAtendimento.required' => 'O campo "Relato de Atendimento" é obrigatório.',
+            'EstagioMudanca.required' => 'O campo "Estágio de Mudança" é obrigatório.',
+            'NovosCombinados.required' => 'O campo "Novos Combinados" é obrigatório.',
+            'OrientacaoSupervisao.required' => 'O campo "Orientação de Supervisão" é obrigatório.',
+            'Data.required' => 'O campo "Data" é obrigatório.',
+            'Data.date' => 'O campo "Data" deve ser uma data válida.',
+            'Agendamento.required' => 'O "Número do Agendamento" é obrigatório.',
+        ]);
 
-    protected function reagendamentoAutomatico($agendamentoId, $atendimentoId) //REAGENDAMENTO AUTOMATICO
+        if ($validator->fails()) {
+            return $this->sendError('Falta de informação', $validator->errors(), 422);
+        }
+
+        try {
+            $atendimento = RetornoAtendimento::create([
+                'VerificacaoCombinados' => $request->VerificacaoCombinados,
+                'RelatoAtendimento' => $request->RelatoAtendimento,
+                'EstagioMudanca' => $request->EstagioMudanca,
+                'NovosCombinados' => $request->NovosCombinados,
+                'OrientacaoSupervisao' => $request->OrientacaoSupervisao,
+                'Data' => $request->Data,
+                'AgendamentoFK' => $request->Agendamento,
+            ]);
+
+            $this->atualizarAgendamentoParaOk($request->Agendamento); //quando realiza o atendimento quer dizer que o aluno estava entao a condicao é ok
+            $this->reagendamentoAutomatico($request->Agendamento);
+
+            return $this->sendResponse($atendimento, 'Retorno Atendimento registrado com sucesso.');
+            
+        } catch (\Throwable $th) {
+            return $this->sendError('Erro ao registrar o retorno do atendimento', [$th->getMessage()], 500);
+        }
+    }
+
+
+    protected function reagendamentoAutomatico($agendamentoId) //REAGENDAMENTO AUTOMATICO
     {
         $agendamentoOriginal = Agendamento::find($agendamentoId);
         

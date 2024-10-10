@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Agendamento;
 use App\Http\Controllers\AlunoRegistro;
+use App\Http\Controllers\Atendimento;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Estagiario;
 use Illuminate\Http\Request;
@@ -23,16 +24,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cadastrarAluno', [AlunoRegistro::class, 'cadastrarAcademico']);
     Route::get('/consultaAluno', [AlunoRegistro::class, 'getAluno']);
 
-    //cadastro agendamento E CONSULTA
+    //cadastro agendamento E CONSULTA E ATUALIZAR
     Route::post('/cadastrarAgendamento', [Agendamento::class, 'cadastrarAgendamento']);
     Route::get('/consultarAgendamento', [Agendamento::class, 'consultarAgendamentosPorEstagiario']);
+    Route::put('/agendamentos/{id}/atualizar-condicao', [Agendamento::class, 'atualizarCondicao']);
+    Route::put('/finalizar-agendamentos/{idAluno}', [Agendamento::class, 'finalizarAgendamentos']);
+
+
+    //constulrar estagiarios ou atualizar
+    Route::get('/estagiario', [Estagiario::class, 'ConsultarEstagiarios']);
+    Route::put('/estagiario', [Estagiario::class, 'AtualizarEstagiario']);
+
+    Route::post('/RealizarAtendimento', [Atendimento::class, 'RealizarAtendimento']); 
     
+    
+
 });
 
 
 
-//constulrar estagiarios ou atualizar
-Route::get('/estagiario', [Estagiario::class, 'ConsultarEstagiarios']);
-Route::put('/estagiario', [Estagiario::class, 'AtualizarEstagiario']);
+
 
 
