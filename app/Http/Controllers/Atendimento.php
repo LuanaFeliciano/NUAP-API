@@ -14,6 +14,13 @@ class Atendimento extends Controller
 {
 
     function RealizarAtendimento(Request $request){
+
+        $user = Auth::user(); 
+
+        if (!in_array($user->tipo, ['estagiario', 'coordenadora'])) {
+            return $this->sendError('Unauthorized', ['error' => 'Você não tem permissão para realizar um atendimento'], 403);
+        }
+
         $agendamento = Agendamento::where('IdAgendamento', $request->Agendamento)->first();
         
         if (!$agendamento) {

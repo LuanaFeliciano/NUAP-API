@@ -5,6 +5,8 @@ use App\Http\Controllers\AlunoRegistro;
 use App\Http\Controllers\Atendimento;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Estagiario;
+use App\Http\Controllers\FilaEspera;
+use App\Http\Controllers\Historico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -37,7 +39,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/RealizarAtendimento', [Atendimento::class, 'RealizarAtendimento']); 
     
+
+    //historico
+    Route::get('/historico', [Historico::class, 'consultarHistorico']);
     
+    //fila de espera
+    Route::get('/fila-espera', [FilaEspera::class, 'listarAlunosSemAgendamento']);
 
 });
 

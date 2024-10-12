@@ -33,4 +33,10 @@ class AlunoRegistro extends Model
     {
         return $this->hasOne(InformacoesAjuda::class, 'IdAluno', 'IdAluno');
     }
+
+    public function agendamentos()
+    {
+        return $this->hasMany(Agendamento::class, 'IdAluno', 'IdAluno');
+    }
+
 }

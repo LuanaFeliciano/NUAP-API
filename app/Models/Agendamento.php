@@ -44,4 +44,8 @@ class Agendamento extends Model
         return $this->hasOne(PrimeiroAtendimento::class, 'AgendamentoFK', 'IdAgendamento');
     }
 
+    public function retornosAtendimento()
+    {
+        return $this->hasMany(RetornoAtendimento::class, 'AgendamentoFK', 'IdAgendamento');
+    }
 }

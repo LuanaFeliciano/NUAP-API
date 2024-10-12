@@ -183,7 +183,7 @@ class Agendamento extends Controller
             $faltas = $agendamentos->where('Condicao', 'f')->count();//que teve falta
             $casosNovos = $agendamentos->where('PrimeiroAtendimento', true)->count();
             $casosDesistencia = $agendamentos->where('Condicao', 'd')->count();
-            $casosFinalizados = $agendamentos->where('Condicao', 'ok')->count();
+            $casosFinalizados = $agendamentos->where('Finalizado', true)->count();
     
             return response()->json([
                 'success' => true,
@@ -194,6 +194,10 @@ class Agendamento extends Controller
                         $status = 'Faltou';
                     } elseif ($agendamento->Condicao === 'ok') {
                         $status = 'Atendido';
+                    }
+
+                    if ($agendamento->Finalizado == true) {
+                        $status = 'Finalizado';
                     }
             
                     return [
@@ -218,6 +222,7 @@ class Agendamento extends Controller
                         'status' => $status, // Novo campo status
                         'primeiro_atendimento' => $agendamento->PrimeiroAtendimento ? 'Sim' : 'Não',
                         'cancelado' => $agendamento->Cancelado ? 'Sim' : 'Não',
+                        'finalizado' => $agendamento->Finalizado ? 'Sim' : 'Não',
                         'Data' => $agendamento->Data,
                         'observacoes' => $agendamento->OBS,
                     ];
