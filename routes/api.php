@@ -46,6 +46,9 @@ Route::middleware('auth:sanctum')->group(function () {
     //fila de espera
     Route::get('/fila-espera', [FilaEspera::class, 'listarAlunosSemAgendamento']);
 
+    //estagiarios disponiveis
+    Route::get('/estagiariosDisponiveis', [Estagiario::class, 'estagiariosDisponiveis']);
+
 });
 
 

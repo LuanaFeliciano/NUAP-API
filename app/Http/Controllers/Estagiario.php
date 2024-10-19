@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agendamento;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -122,6 +123,48 @@ class Estagiario extends Controller
             return $this->sendError('Erro ao atualizar estagiário.', $e->getMessage(), 500);
         }
     }
+
+
+
+//mostrar os estagiarios no dia que nao tem mais de 3 agendamentos nesse dia, ai estara disponivel
+    public function estagiariosDisponiveis(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'Data' => 'required|date',
+        ], [
+            'Data.required' => 'O campo Data é obrigatório.',
+            'Data.date' => 'O campo Data deve ser uma data válida.',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError('Falta de informação', $validator->errors(), 422);
+        }
+
+        try {
+        
+            $estagiarios = User::where('tipo', 'estagiario')->get();
+            
+            $estagiariosDisponiveis = $estagiarios->filter(function ($estagiario) use ($request) {
+
+                $agendamentosNoDia = Agendamento::where('user_id', $estagiario->id)
+                    ->whereDate('Data', $request->Data)
+                    ->count();
+
+                return $agendamentosNoDia < 3;
+            });
+
+            $result = [
+                'estagiariosDisponiveis' => $estagiariosDisponiveis->values()
+            ];
+
+            return $this->sendResponse($result, 'Estagiários encontrados com sucesso!');
+
+        } catch (\Exception $e) {
+            return $this->sendError('Erro ao buscar estagiários disponíveis.', $e->getMessage(), 500);
+        }
+    }
+
 
 
 

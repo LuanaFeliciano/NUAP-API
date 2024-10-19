@@ -57,6 +57,15 @@ class Agendamento extends Controller
             $aluno = AlunoRegistro::where('RA', $request->RaAluno)->firstOrFail();
             $user = User::where('RA', $request->RaEstagiario)->firstOrFail();
 
+            //o estagiario so pode ter 3 agendamentos no dia
+            $agendamentosNoDia = ModelsAgendamento::where('user_id', $user->id)
+                ->whereDate('Data', $request->Data)
+                ->count();
+
+            if ($agendamentosNoDia >= 3) {
+                return $this->sendError('Limite atingido', ['error' => 'O estagiário já possui 3 agendamentos nesse dia.'], 422);
+            }
+
             $temAgendamento = ModelsAgendamento::where('IdAluno', $aluno->IdAluno)->exists();
             $primeiroAtendimento = $temAgendamento ? ($request->PrimeiroAtendimento ?? false) : true;
             //cadastra o agendamento
