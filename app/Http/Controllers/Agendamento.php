@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Agendamento as ModelsAgendamento;
 use App\Models\AlunoRegistro;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -100,28 +101,24 @@ class Agendamento extends Controller
         if ($user->tipo == 'estagiario') {
             $raEstagiario = $user->RA;
             $validator = Validator::make($request->all(), [
-                'Data' => 'nullable|date'
-            ], [
-                'Data.date' => 'O campo Data deve ser uma data válida.',
+                'Data' => 'nullable'
             ]);
 
             $data = today();
-            if (strlen(trim($request->Data)) > 0) {
-                $data = $request->Data;
+            if ($request->has('Data') && !empty(trim($request->Data))) {
+                $data = Carbon::createFromFormat('d/m/Y', $request->Data)->format('Y-m-d');
             }
 
         }else{
             //coordenadora e atendente
             $validator = Validator::make($request->all(), [
                 'RaEstagiario' => 'nullable|string|exists:users,RA',
-                'Data' => 'nullable|date'
             ], [
                 'RaEstagiario.required' => 'O campo RA do estagiário é obrigatório.',
-                'RaEstagiario.exists' => 'O RA do estagiário informado não existe.',
-                'Data.date' => 'O campo Data deve ser uma data válida.',
+                'RaEstagiario.exists' => 'O RA do estagiário informado não existe.', 
             ]);
 
-            if (strlen(trim($request->RaEstagiario)) == 0 && strlen(trim($request->Data)) == 0) {
+            if (strlen(trim($request->RaEstagiario)) == 0 && strlen(trim($request->Data)) == 0 && strlen(trim($request->RaAluno))== 0) {
                 //se não tiver ra nem data pesquisa pelos agendaments de hoje
                 $data = today();
             } else {
@@ -130,8 +127,9 @@ class Agendamento extends Controller
                     $raEstagiario = $request->RaEstagiario;
                 }
                 //se tiver data usa a data infromada
-                if (strlen(trim($request->Data)) > 0) {
-                    $data = $request->Data;
+                if ($request->has('Data') && !empty(trim($request->Data))) {
+                    $data = Carbon::createFromFormat('d/m/Y', $request->Data)->format('Y-m-d');
+
                 }
             } 
         }
@@ -207,6 +205,10 @@ class Agendamento extends Controller
 
                     if ($agendamento->Finalizado == true) {
                         $status = 'Finalizado';
+                    }
+
+                    if ($agendamento->Cancelado == true) {
+                        $status = 'Cancelado';
                     }
             
                     return [
